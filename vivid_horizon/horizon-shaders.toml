@@ -1,0 +1,384 @@
+schema = 1
+id = "vivid_horizon"
+name = "Vivid Horizon"
+version = "1.0.0"
+api = "0.1"
+description = "Vivid colours, volumetric clouds, mirror-like water, rain that soaks the ground and warm torch-lit nights. An original pack in the spirit of the classic vibrant shaders."
+authors = ["Evan-lhm"]
+license = "MIT"
+shared = ["common.wgsl"]
+
+[sky]
+file = "sky.wgsl"
+name = "Vivid sky"
+clouds = false
+sun = false
+
+[material]
+file = "material.wgsl"
+fog = false
+
+[vertex]
+file = "vertex.wgsl"
+
+[weather]
+file = "weather.wgsl"
+
+[shadow]
+resolution = 2048
+distance = 128.0
+option = "shadows"
+resolution_option = "shadow_resolution"
+
+[reflection]
+option = "reflections"
+
+[[post]]
+file = "post/bloom_h.wgsl"
+name = "Bloom (horizontal)"
+output = "bloom_h"
+scale = 0.25
+
+[[post]]
+file = "post/bloom_v.wgsl"
+name = "Bloom (vertical)"
+output = "bloom"
+scale = 0.25
+
+[[post]]
+file = "post/rays.wgsl"
+name = "God rays + ambient occlusion"
+output = "rays"
+scale = 0.5
+
+[[post]]
+file = "post/wet.wgsl"
+name = "Wet reflections"
+output = "wet"
+scale = 0.5
+
+[[post]]
+file = "post/final.wgsl"
+name = "Bloom + colour grade"
+
+[[options]]
+id = "ambient_occlusion"
+name = "Ambient occlusion"
+description = "Soft shade in corners, under leaves and ledges (0: off)."
+type = "float"
+default = 1.0
+min = 0.0
+max = 1.5
+step = 0.05
+
+[[options]]
+id = "sky_saturation"
+name = "Sky saturation"
+description = "How deep and colourful the sky is."
+type = "float"
+default = 1.0
+min = 0.5
+max = 2.0
+step = 0.05
+
+[[options]]
+id = "sunset_glow"
+name = "Sunset glow"
+description = "The orange glow around a low sun."
+type = "float"
+default = 1.0
+min = 0.0
+max = 1.5
+step = 0.05
+
+[[options]]
+id = "cloud_coverage"
+name = "Clouds"
+description = "How much of the sky the pack's clouds cover (0: none)."
+type = "float"
+default = 0.55
+min = 0.0
+max = 1.0
+step = 0.05
+
+[[options]]
+id = "haze"
+name = "Haze"
+description = "Soft haze in the distance, in the sky's colour."
+type = "float"
+default = 0.6
+min = 0.0
+max = 2.0
+step = 0.1
+
+[[options]]
+id = "wet_reflections"
+name = "Wet ground reflections"
+description = "Rain-soaked ground reflects trees, walls and lights (0: off)."
+type = "float"
+default = 1.0
+min = 0.0
+max = 1.5
+step = 0.05
+
+[[options]]
+id = "depth_of_field"
+name = "Depth of field"
+description = "Blur what lies beyond what you look at, like a camera lens (0: off)."
+type = "float"
+default = 0.5
+min = 0.0
+max = 1.5
+step = 0.05
+
+[[options]]
+id = "lens_flare"
+name = "Lens flare"
+description = "Soft rings of light across the picture when looking toward the sun (0: off)."
+type = "float"
+default = 0.6
+min = 0.0
+max = 1.5
+step = 0.05
+
+[[options]]
+id = "volumetric_clouds"
+name = "Volumetric clouds"
+description = "Thick, shaded clouds with depth. Off: the lighter flat clouds."
+type = "bool"
+default = true
+
+[[options]]
+id = "milky_way"
+name = "Milky Way"
+description = "The band of the Milky Way and faint stars on clear nights (0: off)."
+type = "float"
+default = 1.0
+min = 0.0
+max = 2.0
+step = 0.1
+
+[[options]]
+id = "bloom_strength"
+name = "Bloom"
+description = "How much bright things glow."
+type = "float"
+default = 0.4
+min = 0.0
+max = 1.5
+step = 0.05
+
+[[options]]
+id = "bloom_threshold"
+name = "Bloom threshold"
+description = "How bright a pixel must be to glow."
+type = "float"
+default = 0.8
+min = 0.0
+max = 0.95
+step = 0.05
+
+[[options]]
+id = "godrays"
+name = "God rays"
+description = "Shafts of sunlight through trees and over hills."
+type = "float"
+default = 0.8
+min = 0.0
+max = 1.5
+step = 0.05
+
+[[options]]
+id = "exposure"
+name = "Exposure"
+type = "float"
+default = 1.0
+min = 0.5
+max = 2.0
+step = 0.05
+
+[[options]]
+id = "contrast"
+name = "Contrast"
+type = "float"
+default = 1.0
+min = 0.8
+max = 1.5
+step = 0.02
+
+[[options]]
+id = "saturation"
+name = "Saturation"
+type = "float"
+default = 1.1
+min = 0.0
+max = 2.0
+step = 0.05
+
+[[options]]
+id = "vibrance"
+name = "Vibrance"
+description = "Saturates dull colours more than vivid ones."
+type = "float"
+default = 0.2
+min = 0.0
+max = 1.0
+step = 0.05
+
+[[options]]
+id = "vignette"
+name = "Vignette"
+type = "bool"
+default = true
+
+[[options]]
+id = "waving"
+name = "Waving plants"
+description = "Leaves, grass and flowers sway in the wind."
+type = "bool"
+default = true
+
+[[options]]
+id = "wind_strength"
+name = "Wind"
+description = "How far plants sway. Rain and storms add more."
+type = "float"
+default = 1.0
+min = 0.0
+max = 2.5
+step = 0.1
+
+[[options]]
+id = "shadows"
+name = "Shadows"
+description = "Shadows from the sun and moon. Costs the most GPU time."
+type = "bool"
+default = true
+
+[[options]]
+id = "shadow_resolution"
+name = "Shadow quality"
+type = "choice"
+values = ["1024", "2048", "4096"]
+default = "2048"
+
+[[options]]
+id = "shadow_strength"
+name = "Shadow darkness"
+type = "float"
+default = 0.85
+min = 0.0
+max = 1.0
+step = 0.05
+
+[[options]]
+id = "reflections"
+name = "Water reflections"
+type = "bool"
+default = true
+
+[[options]]
+id = "torch_light"
+name = "Torch light"
+description = "How warm and strong the light of torches, lanterns and held lights is."
+type = "float"
+default = 1.0
+min = 0.0
+max = 2.0
+step = 0.1
+
+[[options]]
+id = "caustics"
+name = "Caustics"
+description = "Dancing light on the bottom of sunlit water."
+type = "bool"
+default = true
+
+[[options]]
+id = "water_shine"
+name = "Water shine"
+description = "How strongly water reflects the world and the sun."
+type = "float"
+default = 0.8
+min = 0.0
+max = 1.0
+step = 0.05
+
+[[materials]]
+id = 10
+sprites = ["block/*_leaves"]
+
+[[materials]]
+id = 21
+sprites = ["block/tall_grass_top", "block/large_fern_top", "block/rose_bush_top", "block/lilac_top", "block/peony_top"]
+
+[[materials]]
+id = 20
+sprites = ["block/short_grass", "block/fern", "block/tall_grass_bottom", "block/large_fern_bottom", "block/rose_bush_bottom", "block/lilac_bottom", "block/peony_bottom", "block/wheat_stage*", "block/carrots_stage*", "block/potatoes_stage*", "block/beetroots_stage*", "block/dead_bush", "block/sweet_berry_bush_stage*"]
+blocks = ["dandelion", "poppy", "blue_orchid", "allium", "azure_bluet", "red_tulip", "orange_tulip", "white_tulip", "pink_tulip", "oxeye_daisy", "cornflower", "lily_of_the_valley", "torchflower", "wither_rose", "open_eyeblossom", "closed_eyeblossom", "short_dry_grass", "tall_dry_grass", "bush", "firefly_bush"]
+
+[[pages]]
+id = "main"
+name = "Vivid Horizon"
+items = ["page:colour", "page:light", "page:sky", "page:world"]
+
+[[pages]]
+id = "colour"
+name = "Colour"
+description = "Exposure, contrast and how colourful the picture is."
+items = ["exposure", "contrast", "saturation", "vibrance", "vignette", "depth_of_field", "lens_flare"]
+
+[[pages]]
+id = "light"
+name = "Light"
+description = "Shadows, bloom and god rays."
+items = ["shadows", "shadow_resolution", "shadow_strength", "ambient_occlusion", "torch_light", "godrays", "bloom_strength", "bloom_threshold"]
+
+[[pages]]
+id = "sky"
+name = "Sky"
+items = ["sky_saturation", "sunset_glow", "cloud_coverage", "haze", "volumetric_clouds", "milky_way"]
+
+[[pages]]
+id = "world"
+name = "Water and plants"
+items = ["reflections", "wet_reflections", "water_shine", "caustics", "waving", "wind_strength"]
+
+[[lights]]
+color = [1.0, 0.55, 0.22]
+blocks = ["torch", "wall_torch", "campfire", "fire", "jack_o_lantern", "furnace", "smoker", "blast_furnace"]
+
+[[lights]]
+color = [1.0, 0.7, 0.38]
+blocks = ["lantern", "glowstone", "shroomlight", "*_candle", "candle", "redstone_lamp"]
+
+[[lights]]
+color = [0.75, 0.92, 1.0]
+blocks = ["sea_lantern", "end_rod", "beacon", "conduit"]
+
+[[lights]]
+color = [1.0, 0.82, 0.4]
+blocks = ["ochre_froglight"]
+
+[[lights]]
+color = [0.6, 1.0, 0.55]
+blocks = ["verdant_froglight"]
+
+[[lights]]
+color = [1.0, 0.62, 0.92]
+blocks = ["pearlescent_froglight"]
+
+[[lights]]
+color = [0.3, 0.75, 1.0]
+blocks = ["soul_*"]
+
+[[lights]]
+color = [1.0, 0.2, 0.1]
+blocks = ["redstone_torch", "redstone_wall_torch", "redstone_ore", "deepslate_redstone_ore"]
+
+[[lights]]
+color = [1.0, 0.45, 0.1]
+blocks = ["lava", "magma_block"]
+
+[budget]
+gpu_ms = 6.0

@@ -1,0 +1,11 @@
+name = "Vivid Horizon"
+summary = "Vivid colours, volumetric clouds, mirror-like water, rain that soaks the ground and warm torch-lit nights."
+description = """
+An original shader pack in the spirit of the classic vibrant shaders: a soft blue sky with volumetric
+clouds and the Milky Way, warm sunlight and cool blue shadows, ambient occlusion, god rays, coloured
+block light, turquoise water with reflections and caustics, glassy waterfalls, raindrop rings and wet
+ground that reflects the world, depth of field and lens flare. Every effect can be tuned or turned off
+in Shader Options.
+"""
+authors = ["Evan-lhm"]
+license = "MIT"
