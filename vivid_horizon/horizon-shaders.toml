@@ -1,7 +1,7 @@
 schema = 1
 id = "vivid_horizon"
 name = "Vivid Horizon"
-version = "1.0.0"
+version = "1.0.1"
 api = "0.1"
 description = "Vivid colours, volumetric clouds, mirror-like water, rain that soaks the ground and warm torch-lit nights. An original pack in the spirit of the classic vibrant shaders."
 authors = ["Evan-lhm"]

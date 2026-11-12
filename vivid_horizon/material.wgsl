@@ -57,20 +57,28 @@ fn translucent_above(p: vec3<f32>, n: vec3<f32>) -> vec4<f32> {
 // `detail` fades the small ripples out with distance, where they would only sparkle as grain.
 fn water_height(p: vec2<f32>, detail: f32) -> f32 {
     let t = frame.time;
-    return value_noise(p * 0.9 + vec2<f32>(t * 0.35, t * 0.2)) * 0.55
-        + value_noise(p * 2.3 + vec2<f32>(-t * 0.5, t * 0.4)) * 0.3 * mix(0.4, 1.0, detail)
-        + value_noise(p * 5.1 + vec2<f32>(t * 0.7, -t * 0.6)) * 0.15 * detail;
+    // Each layer is turned to its own angle: value noise is flat along its grid lines, which
+    // would otherwise show as a lattice of straight horizontal and vertical lines.
+    let ra = mat2x2<f32>(0.93, 0.37, -0.37, 0.93);
+    let rb = mat2x2<f32>(0.8, 0.6, -0.6, 0.8);
+    let rc = mat2x2<f32>(0.28, 0.96, -0.96, 0.28);
+    return value_noise(ra * p * 0.9 + vec2<f32>(t * 0.35, t * 0.2)) * 0.55
+        + value_noise(rb * p * 2.3 + vec2<f32>(-t * 0.5, t * 0.4)) * 0.3 * mix(0.4, 1.0, detail)
+        + value_noise(rc * p * 5.1 + vec2<f32>(t * 0.7, -t * 0.6)) * 0.15 * detail;
 }
 
-// Ripples: the slope of water_height, so they don't line up in bands.
-fn water_normal(world: vec2<f32>, dist: f32) -> vec3<f32> {
+// Ripples: the slope of water_height, so they don't line up in bands. `facing` is how steeply
+// the eye looks at the surface (|view.y|): at a low angle one screen row spans many ripples,
+// which would alias into horizontal stripes, so the small ripples fade out sooner there.
+fn water_normal(world: vec2<f32>, dist: f32, facing: f32) -> vec3<f32> {
     let e = 0.08;
-    let detail = 1.0 - smoothstep(6.0, 28.0, dist);
+    let foot = dist / max(facing, 0.08);
+    let detail = 1.0 - smoothstep(8.0, 40.0, foot);
     let h = water_height(world, detail);
     let dx = water_height(world + vec2<f32>(e, 0.0), detail) - h;
     let dz = water_height(world + vec2<f32>(0.0, e), detail) - h;
     // Calm far away, where ripples would only shimmer.
-    let strength = 0.15 * (1.0 - smoothstep(12.0, 48.0, dist));
+    let strength = 0.15 * (1.0 - smoothstep(12.0, 48.0, dist)) * (1.0 - 0.7 * smoothstep(30.0, 120.0, foot));
     return normalize(vec3<f32>(-dx / e * strength, 1.0, -dz / e * strength));
 }
 
@@ -135,7 +143,7 @@ fn water(input: MaterialInput, sun: f32) -> vec4<f32> {
     let dist = length(input.position);
     let view = -input.position / dist;
     let world = (input.position.xz + frame.camera_position.xz) % vec2<f32>(4096.0);
-    var n = select(input.normal, water_normal(world, dist), input.face == 1u);
+    var n = select(input.normal, water_normal(world, dist, abs(view.y)), input.face == 1u);
     var ring = 0.0;
     let rains = select(0.0, 1.0, frame.downfall > 0.0 && frame.temperature >= 0.15);
     let drops = frame.rain * rains * smoothstep(0.9, 0.97, input.light.y) * (1.0 - smoothstep(32.0, 80.0, dist));
@@ -169,7 +177,10 @@ fn water(input: MaterialInput, sun: f32) -> vec4<f32> {
     var above = sky_with_clouds(vec3<f32>(r.x, abs(r.y), r.z), frame.fog_color) * mix(0.25, 1.0, input.light.y);
     let on_plane = abs(input.position.y + frame.camera_position.y - frame.water_plane) < 0.6;
     if reflections && frame.has_reflection == 1u && input.face == 1u && on_plane {
-        let uv = clamp(input.screen + n.xz * 0.04, vec2<f32>(0.001), vec2<f32>(0.999));
+        // Less bend at a low angle: there a row of the mirror is stretched far, and jittering it
+        // shows as stripes.
+        let bend = 0.04 * mix(0.3, 1.0, smoothstep(0.1, 0.5, abs(view.y)));
+        let uv = clamp(input.screen + n.xz * bend, vec2<f32>(0.001), vec2<f32>(0.999));
         let mirror = textureSampleLevel(reflection, reflection_sampler, uv, 0.0).rgb;
         // The mirror draws vanilla's sky; where it matches that, keep the pack's sky instead.
         let vanilla_sky = mix(frame.fog_color, frame.sky_color, smoothstep(0.0, 0.4, abs(r.y)));
@@ -220,15 +231,18 @@ fn water_from_below(input: MaterialInput) -> vec4<f32> {
     let dist = length(input.position);
     let view = -input.position / dist;
     let world = (input.position.xz + frame.camera_position.xz) % vec2<f32>(4096.0);
-    let n = water_normal(world, dist);
+    let n = water_normal(world, dist, abs(view.y));
     // How straight up the eye looks through the surface, bent by the ripples.
     let cos_i = clamp(dot(n, -view), 0.0, 1.0);
-    let window = smoothstep(0.62, 0.74, cos_i);
+    let window = smoothstep(0.5, 0.72, cos_i);
     let uv = clamp(input.screen + n.xz * 0.03, vec2<f32>(0.0), vec2<f32>(0.9999));
     let above = textureLoad(opaque_color, vec2<i32>(uv * frame.resolution), 0).rgb;
     let light = mix(0.15, 1.0, input.light.y) * mix(0.25, 1.0, daylight());
     let depths = vec3<f32>(0.04, 0.22, 0.32) * light;
-    var c = mix(depths, above * vec3<f32>(0.8, 1.0, 1.05) + depths * 0.3, window);
+    // Beyond the window the surface still lets some of the outside through (real water is not
+    // a perfect mirror there, and a fully dark ceiling hides the shore and the trees).
+    let see = max(window, 0.4);
+    var c = mix(depths, above * vec3<f32>(0.8, 1.0, 1.05) + depths * 0.3, see);
     // A thin bright line where the window meets the mirror.
     c += vec3<f32>(0.5, 0.8, 0.9) * light * (window * (1.0 - window)) * 0.8;
     return vec4<f32>(c, 1.0);
