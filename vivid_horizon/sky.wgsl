@@ -125,16 +125,17 @@ fn volume_clouds(dir: vec3<f32>, vanilla: vec3<f32>) -> vec3<f32> {
 
 fn sky(input: SkyInput) -> vec4<f32> {
     let d = bobbed_direction(input.direction);
-    var c = select(sky_with_clouds(d, input.color.rgb), volume_clouds(d, input.color.rgb), volumetric_clouds);
+    let vanilla = to_gamma(input.color.rgb);
+    var c = select(sky_with_clouds(d, vanilla), volume_clouds(d, vanilla), volumetric_clouds);
     // The sun's disc, round with a soft edge. Only here: the haze and reflections use the sky
     // without it, or distant hills would show a ghost of the sun through their haze.
     let sun = frame.sun_direction;
     let dusk = clamp(dusk_amount(), 0.0, 1.0);
     let disc = smoothstep(0.9993, 0.9997, dot(d, sun)) * smoothstep(-0.2, 0.0, sun.y) * (1.0 - frame.rain);
     // Hidden behind clouds: how far they changed the clear sky here.
-    let cloud = clamp(length(c - vivid_sky(d, input.color.rgb)) * 4.0, 0.0, 1.0);
+    let cloud = clamp(length(c - vivid_sky(d, vanilla)) * 4.0, 0.0, 1.0);
     c += mix(vec3<f32>(1.0, 0.97, 0.9), vec3<f32>(1.0, 0.7, 0.4), dusk) * disc * (1.0 - cloud * 0.85) * 2.0;
     let dark = (1.0 - smoothstep(-0.25, 0.05, sun.y)) * (1.0 - frame.rain) * smoothstep(0.0, 0.25, d.y);
     c += galaxy(d) * dark * (1.0 - cloud) * milky_way * select(0.0, 1.0, frame.dimension == 0);
-    return vec4<f32>(c, input.color.a);
+    return vec4<f32>(to_linear(c), input.color.a);
 }

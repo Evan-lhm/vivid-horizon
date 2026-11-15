@@ -145,7 +145,9 @@ fn ambient(input: PostInput) -> f32 {
         let ang = f32(i) * 2.39996;
         let r = sqrt(1.0 - f * f);
         let dir = t * cos(ang) * r + b * sin(ang) * r + n * (f * 0.8 + 0.2);
-        let s = p + dir * AO_RADIUS * mix(0.25, 1.0, f);
+        // Start a little off the surface, more so far away and on slopes seen at a low angle, where
+        // the facing read from the depth is noisy and would otherwise darken the surface in stripes.
+        let s = p + n * (0.03 + dist * 0.004) + dir * AO_RADIUS * mix(0.25, 1.0, f);
         let uv = project(vec4<f32>(s, 1.0)).xy;
         if any(uv < vec2<f32>(0.0)) || any(uv > vec2<f32>(1.0)) {
             continue;
@@ -154,7 +156,7 @@ fn ambient(input: PostInput) -> f32 {
         let behind = length(s) - length(q);
         // Buried: the geometry on screen lies in front of the sample, but not far in front
         // (a distant wall in front isn't touching this surface).
-        occluded += smoothstep(0.02, 0.12, behind) * (1.0 - smoothstep(AO_RADIUS, AO_RADIUS * 2.5, behind));
+        occluded += smoothstep(0.06 + dist * 0.004, 0.18 + dist * 0.004, behind) * (1.0 - smoothstep(AO_RADIUS, AO_RADIUS * 2.5, behind));
     }
     let ao = 1.0 - occluded / f32(AO_SAMPLES) * ambient_occlusion * (1.0 - smoothstep(48.0, 96.0, dist));
     return ao;

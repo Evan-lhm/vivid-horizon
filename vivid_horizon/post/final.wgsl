@@ -62,13 +62,13 @@ fn defocus(input: PostInput, c: vec3<f32>) -> vec3<f32> {
         let r = sqrt((f32(i) + 0.5) / 12.0);
         let uv = input.uv + vec2<f32>(cos(a), sin(a)) * r * radius * aspect;
         let m = textureSampleLevel(wet, linear_sampler, uv, 0.0);
-        sum += mix(textureSampleLevel(scene_color, linear_sampler, uv, 0.0).rgb, m.rgb, clamp(m.a, 0.0, 1.0));
+        sum += mix(to_gamma(textureSampleLevel(scene_color, linear_sampler, uv, 0.0).rgb), m.rgb, clamp(m.a, 0.0, 1.0));
     }
     return sum / 13.0;
 }
 
 fn post(input: PostInput) -> vec4<f32> {
-    var c = input.color.rgb;
+    var c = to_gamma(input.color.rgb);
     // Wet ground mirrors the world (post/wet.wgsl).
     let mirror = textureSampleLevel(wet, linear_sampler, input.uv, 0.0);
     c = mix(c, mirror.rgb, clamp(mirror.a, 0.0, 1.0));
@@ -76,11 +76,15 @@ fn post(input: PostInput) -> vec4<f32> {
         c = defocus(input, c);
     }
     // Ambient occlusion, softened over a few pixels to hide its grain.
-    let ao_step = 2.0 / frame.resolution;
+    let ao_step = 3.0 / frame.resolution;
     let shade = (textureSampleLevel(rays, linear_sampler, input.uv + ao_step * vec2<f32>(1.0, 1.0), 0.0).g
         + textureSampleLevel(rays, linear_sampler, input.uv + ao_step * vec2<f32>(-1.0, 1.0), 0.0).g
         + textureSampleLevel(rays, linear_sampler, input.uv + ao_step * vec2<f32>(1.0, -1.0), 0.0).g
-        + textureSampleLevel(rays, linear_sampler, input.uv + ao_step * vec2<f32>(-1.0, -1.0), 0.0).g) * 0.25;
+        + textureSampleLevel(rays, linear_sampler, input.uv + ao_step * vec2<f32>(-1.0, -1.0), 0.0).g
+        + textureSampleLevel(rays, linear_sampler, input.uv + ao_step * vec2<f32>(1.0, 0.0), 0.0).g
+        + textureSampleLevel(rays, linear_sampler, input.uv + ao_step * vec2<f32>(-1.0, 0.0), 0.0).g
+        + textureSampleLevel(rays, linear_sampler, input.uv + ao_step * vec2<f32>(0.0, 1.0), 0.0).g
+        + textureSampleLevel(rays, linear_sampler, input.uv + ao_step * vec2<f32>(0.0, -1.0), 0.0).g) * 0.125;
     c *= shade;
     // Under water: a blue-green tint and a thick fog that hides what is far, darker where the
     // sky's light doesn't reach.
@@ -140,5 +144,5 @@ fn post(input: PostInput) -> vec4<f32> {
         let d = length((input.uv - 0.5) * vec2<f32>(aspect, 1.0)) / length(vec2<f32>(aspect, 1.0) * 0.5);
         c *= 1.0 - smoothstep(0.6, 1.15, d) * 0.3;
     }
-    return vec4<f32>(clamp(c, vec3<f32>(0.0), vec3<f32>(1.0)), input.color.a);
+    return vec4<f32>(to_linear(clamp(c, vec3<f32>(0.0), vec3<f32>(1.0))), input.color.a);
 }
