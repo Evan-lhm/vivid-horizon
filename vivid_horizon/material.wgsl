@@ -45,8 +45,7 @@ fn translucent_above(p: vec3<f32>, n: vec3<f32>) -> vec4<f32> {
     if textureSampleCompareLevel(shadow_map_translucent, shadow_sampler, sp.xy, sp.z) > 0.5 {
         return none;
     }
-    var glass = textureLoad(shadow_color, vec2<i32>(sp.xy * vec2<f32>(textureDimensions(shadow_color))), 0);
-    glass = vec4<f32>(to_gamma(glass.rgb), glass.a);
+    let glass = textureLoad(shadow_color, vec2<i32>(sp.xy * vec2<f32>(textureDimensions(shadow_color))), 0);
     if glass.a > 0.999 {
         return vec4<f32>(1.0, 1.0, 1.0, 1.0);
     }
@@ -133,7 +132,7 @@ fn screen_reflection(p: vec3<f32>, r: vec3<f32>) -> vec4<f32> {
         let dq = length(q);
         if dq > scene && dq < scene + 0.6 + t * 0.15 {
             let edge = smoothstep(0.0, 0.08, min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y)));
-            return vec4<f32>(to_gamma(textureLoad(opaque_color, vec2<i32>(uv * frame.resolution), 0).rgb), edge);
+            return vec4<f32>(textureLoad(opaque_color, vec2<i32>(uv * frame.resolution), 0).rgb, edge);
         }
         t = t * 1.18 + 0.15;
     }
@@ -166,7 +165,7 @@ fn water(input: MaterialInput, sun: f32) -> vec4<f32> {
     }
     // A falling sheet is thin: what lies behind it shows through.
     deep = min(deep, select(1.2, 64.0, input.face == 1u));
-    let bottom = to_gamma(textureLoad(opaque_color, vec2<i32>(refract_uv * frame.resolution), 0).rgb);
+    let bottom = textureLoad(opaque_color, vec2<i32>(refract_uv * frame.resolution), 0).rgb;
     let absorb = exp(-vec3<f32>(0.6, 0.24, 0.17) * deep);
     let scatter = vec3<f32>(0.05, 0.21, 0.25) * light * mix(0.6, 1.0, sun);
     // Even shallow water keeps some colour of its own, so the bottom never shows bare.
@@ -175,16 +174,16 @@ fn water(input: MaterialInput, sun: f32) -> vec4<f32> {
 
     // Above: the pack's sky, with the world's mirror where it shows terrain.
     let r = reflect(-view, n);
-    var above = sky_with_clouds(vec3<f32>(r.x, abs(r.y), r.z), fog_g()) * mix(0.25, 1.0, input.light.y);
+    var above = sky_with_clouds(vec3<f32>(r.x, abs(r.y), r.z), frame.fog_color) * mix(0.25, 1.0, input.light.y);
     let on_plane = abs(input.position.y + frame.camera_position.y - frame.water_plane) < 0.6;
     if reflections && frame.has_reflection == 1u && input.face == 1u && on_plane {
         // Less bend at a low angle: there a row of the mirror is stretched far, and jittering it
         // shows as stripes.
         let bend = 0.04 * mix(0.3, 1.0, smoothstep(0.1, 0.5, abs(view.y)));
         let uv = clamp(input.screen + n.xz * bend, vec2<f32>(0.001), vec2<f32>(0.999));
-        let mirror = to_gamma(textureSampleLevel(reflection, reflection_sampler, uv, 0.0).rgb);
+        let mirror = textureSampleLevel(reflection, reflection_sampler, uv, 0.0).rgb;
         // The mirror draws vanilla's sky; where it matches that, keep the pack's sky instead.
-        let vanilla_sky = mix(fog_g(), sky_g(), smoothstep(0.0, 0.4, abs(r.y)));
+        let vanilla_sky = mix(frame.fog_color, frame.sky_color, smoothstep(0.0, 0.4, abs(r.y)));
         let terrain = smoothstep(0.04, 0.15, length(mirror - vanilla_sky));
         above = mix(above, mirror, terrain);
     } else if reflections && input.face == 1u && dist < 64.0 {
@@ -208,7 +207,7 @@ fn water(input: MaterialInput, sun: f32) -> vec4<f32> {
         let lace = smoothstep(0.55, 0.8, value_noise(world * 2.6 + vec2<f32>(frame.time * 0.25, 0.0)));
         c = mix(c, vec3<f32>(0.9, 0.97, 1.0) * lit, 0.5 * lace * (1.0 - smoothstep(0.0, 0.9, deep)));
         // The rings catch the grey sky light, so they show even where the water looks down.
-        c += fog_g() * (0.3 + 0.7 * lit) * ring * 0.35;
+        c += frame.fog_color * (0.3 + 0.7 * lit) * ring * 0.35;
     } else {
         // Falling water: the vanilla flow texture in the biome's water colour, with long
         // streaks sliding down so the sheet reads as moving, glassy water rather than foam.
@@ -237,7 +236,7 @@ fn water_from_below(input: MaterialInput) -> vec4<f32> {
     let cos_i = clamp(dot(n, -view), 0.0, 1.0);
     let window = smoothstep(0.5, 0.72, cos_i);
     let uv = clamp(input.screen + n.xz * 0.03, vec2<f32>(0.0), vec2<f32>(0.9999));
-    let above = to_gamma(textureLoad(opaque_color, vec2<i32>(uv * frame.resolution), 0).rgb);
+    let above = textureLoad(opaque_color, vec2<i32>(uv * frame.resolution), 0).rgb;
     let light = mix(0.15, 1.0, input.light.y) * mix(0.25, 1.0, daylight());
     let depths = vec3<f32>(0.04, 0.22, 0.32) * light;
     // Beyond the window the surface still lets some of the outside through (real water is not
@@ -278,19 +277,19 @@ fn wet(input: MaterialInput, c_in: vec3<f32>, wetness: f32) -> vec3<f32> {
         * smoothstep(0.5, 1.0, wetness) * (1.0 - smoothstep(16.0, 40.0, dist));
     let n = normalize(vec3<f32>(tilt.x * 0.5, 1.0, tilt.y * 0.5));
     let r = reflect(-view, n);
-    let sky = vivid_sky(vec3<f32>(r.x, abs(r.y), r.z), fog_g()) * input.light.y;
+    let sky = vivid_sky(vec3<f32>(r.x, abs(r.y), r.z), frame.fog_color) * input.light.y;
     let fresnel = 0.04 + 0.96 * pow(1.0 - max(dot(n, view), 0.0), 5.0);
     // A film, not a mirror: soaked ground turns darker and deeper, and a soft sheen of the
     // grey sky lies over it, strong at low angles (blurred: the film is rough, so no sharp clouds).
-    let sheen = mix(fog_g(), sky, 0.35) * mix(0.5, 1.0, input.light.y);
+    let sheen = mix(frame.fog_color, sky, 0.35) * mix(0.5, 1.0, input.light.y);
     c = mix(c * (1.0 - soak * 0.4), sheen, soak * mix(0.12, 0.8, fresnel));
-    c += fog_g() * input.light.y * min(length(tilt), 1.0) * soak * 0.45;
+    c += frame.fog_color * input.light.y * min(length(tilt), 1.0) * soak * 0.45;
     // Tell the post stage this ground is a wet mirror, so post/wet.wgsl reflects the world in it.
     set_surface(n, soak, 0.0);
     return c;
 }
 
-fn material_gamma(input: MaterialInput) -> Surface {
+fn material(input: MaterialInput) -> Surface {
     let base = input.albedo * input.tint * vec4<f32>(input.lightmap, 1.0);
     if input.fluid == 2u || frame.dimension != 0 {
         return Surface(vec4<f32>(apply_fog(base.rgb, input.position), base.a));
@@ -327,10 +326,9 @@ fn material_gamma(input: MaterialInput) -> Surface {
 
     // Block light: warm and orange near torches, falling off fast, in the colour the manifest's
     // [[lights]] give the sources nearby (blue by soul fire, red by redstone).
-    var near = block_light_color(input.position);
-    near = vec4<f32>(to_gamma(near.rgb * 4.0), near.a);
+    let near = block_light_color(input.position);
     // block_light_colors stores the [[lights]] colours over 4 (they range 0..4).
-    let lamp = mix(vec3<f32>(1.0, 0.55, 0.22), near.rgb, min(near.a, 1.0));
+    let lamp = mix(vec3<f32>(1.0, 0.55, 0.22), near.rgb * 4.0, min(near.a, 1.0));
     let glow = pow(input.light.x, 2.0) * torch_light * (1.0 - day * input.light.y * 0.7);
     let surface = input.albedo.rgb * input.tint.rgb;
     // Tint rather than add: vanilla's light is already bright near a torch, so adding more
@@ -368,16 +366,4 @@ fn material_gamma(input: MaterialInput) -> Surface {
         c = wet(input, c, wetness);
     }
     return Surface(vec4<f32>(apply_fog(c, input.position), base.a));
-}
-
-// The API hands this stage linear light: run the pack's gamma-tuned maths on gamma copies of the
-// colour inputs, then hand the result back as linear light.
-fn material(input_linear: MaterialInput) -> Surface {
-    var input = input_linear;
-    input.albedo = vec4<f32>(to_gamma(input_linear.albedo.rgb), input_linear.albedo.a);
-    input.tint = vec4<f32>(to_gamma(input_linear.tint.rgb), input_linear.tint.a);
-    input.lightmap = to_gamma(input_linear.lightmap);
-    input.colored_light = to_gamma(input_linear.colored_light);
-    let s = material_gamma(input);
-    return Surface(vec4<f32>(to_linear(s.color.rgb), s.color.a));
 }

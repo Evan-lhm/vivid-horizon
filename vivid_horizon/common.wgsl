@@ -1,21 +1,3 @@
-// API 0.2 hands the stages linear light; this pack's colours and maths were tuned in vanilla's
-// gamma, so each stage converts its inputs to gamma, runs as before, and converts its result back.
-fn to_gamma(c: vec3<f32>) -> vec3<f32> {
-    return pow(max(c, vec3<f32>(0.0)), vec3<f32>(1.0 / 2.2));
-}
-
-fn to_linear(c: vec3<f32>) -> vec3<f32> {
-    return pow(max(c, vec3<f32>(0.0)), vec3<f32>(2.2));
-}
-
-fn fog_g() -> vec3<f32> {
-    return to_gamma(frame.fog_color);
-}
-
-fn sky_g() -> vec3<f32> {
-    return to_gamma(frame.sky_color);
-}
-
 fn luminance(c: vec3<f32>) -> f32 {
     return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
 }
@@ -175,9 +157,9 @@ fn fog_toward(position: vec3<f32>) -> vec3<f32> {
         return vec3<f32>(0.04, 0.22, 0.32) * mix(0.15, 1.0, frame.eye_light_smooth.y) * mix(0.25, 1.0, daylight());
     }
     if frame.dimension != 0 || frame.eye_in != 0u {
-        return fog_g();
+        return frame.fog_color;
     }
-    return vivid_sky(position, fog_g());
+    return vivid_sky(position, frame.fog_color);
 }
 
 // Vanilla's fog at the edge of the world, plus a soft haze that grows with distance in the

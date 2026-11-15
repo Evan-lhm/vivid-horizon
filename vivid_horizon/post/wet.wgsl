@@ -36,7 +36,7 @@ fn post(input: PostInput) -> vec4<f32> {
             if dq > scene && dq < scene + 0.8 + t * 0.2 {
                 let edge = smoothstep(0.0, 0.1, min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y)));
                 let fade = 1.0 - smoothstep(24.0, 48.0, length(p));
-                let col = to_gamma(textureSampleLevel(scene_color, linear_sampler, uv, 0.0).rgb);
+                let col = textureSampleLevel(scene_color, linear_sampler, uv, 0.0).rgb;
                 return vec4<f32>(col, s.smoothness * mix(0.15, 0.85, fresnel) * edge * fade * wet_reflections);
             }
         }

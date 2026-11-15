@@ -2,7 +2,7 @@
 override bloom_threshold: f32 = 0.8;
 
 fn bright(uv: vec2<f32>) -> vec3<f32> {
-    let c = to_gamma(textureSampleLevel(previous, linear_sampler, uv, 0.0).rgb);
+    let c = textureSampleLevel(previous, linear_sampler, uv, 0.0).rgb;
     // The daytime sky is bright everywhere; let it glow less.
     let sky = select(1.0, 0.15, depth_at(uv) == 0.0);
     let l = luminance(c);
