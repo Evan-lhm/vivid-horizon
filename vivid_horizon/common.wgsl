@@ -1,3 +1,21 @@
+// API 0.2 hands the stages linear light; this pack's colours and maths were tuned in vanilla's
+// gamma, so each stage converts its inputs to gamma, runs as before, and converts its result back.
+fn to_gamma(c: vec3<f32>) -> vec3<f32> {
+    return pow(max(c, vec3<f32>(0.0)), vec3<f32>(1.0 / 2.2));
+}
+
+fn to_linear(c: vec3<f32>) -> vec3<f32> {
+    return pow(max(c, vec3<f32>(0.0)), vec3<f32>(2.2));
+}
+
+fn fog_g() -> vec3<f32> {
+    return to_gamma(frame.fog_color);
+}
+
+fn sky_g() -> vec3<f32> {
+    return to_gamma(frame.sky_color);
+}
+
 fn luminance(c: vec3<f32>) -> f32 {
     return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
 }
@@ -53,7 +71,7 @@ fn vivid_sky(dir_in: vec3<f32>, vanilla: vec3<f32>) -> vec3<f32> {
     let side = dot(normalize(dir.xz + vec2<f32>(1e-4)), normalize(sun.xz + vec2<f32>(1e-4))) * 0.5 + 0.5;
 
     // Day: soft blue overhead to a hazy lavender-white horizon.
-    let day_sky = mix(vec3<f32>(0.80, 0.80, 0.93), vec3<f32>(0.30, 0.50, 0.86), pow(up, 0.5));
+    let day_sky = mix(vec3<f32>(0.62, 0.77, 0.97), vec3<f32>(0.17, 0.44, 0.93), pow(up, 0.5));
     // Dusk: a warm band toward the sun, lavender-pink away from it, muted blue-violet overhead.
     let dusk_horizon = mix(vec3<f32>(0.62, 0.50, 0.70), vec3<f32>(1.0, 0.55, 0.28), pow(side, 2.0));
     let dusk_sky = mix(dusk_horizon, vec3<f32>(0.32, 0.36, 0.62), pow(up, 0.45));
@@ -157,19 +175,21 @@ fn fog_toward(position: vec3<f32>) -> vec3<f32> {
         return vec3<f32>(0.04, 0.22, 0.32) * mix(0.15, 1.0, frame.eye_light_smooth.y) * mix(0.25, 1.0, daylight());
     }
     if frame.dimension != 0 || frame.eye_in != 0u {
-        return frame.fog_color;
+        return fog_g();
     }
-    return vivid_sky(position, frame.fog_color);
+    return vivid_sky(position, fog_g());
 }
 
 // Vanilla's fog at the edge of the world, plus a soft haze that grows with distance in the
-// Overworld's open air, in the sky's colour, so far hills fade into the horizon.
+// Overworld's open air, in the sky's colour, so far hills fade into the horizon (thin: the first version's haze
+// took a quarter of the colour out of the middle distance and read as a white film).
 fn apply_fog(c: vec3<f32>, position: vec3<f32>) -> vec3<f32> {
-    let d = max(length(position.xz), abs(position.y));
-    var f = smoothstep(frame.fog_start, frame.fog_end, d);
+    // vanilla_fog is the old linear ramp (environment fog and render-distance fog, the larger); smoothstep
+    // over 0..1 gives the same curve as the former smoothstep(fog_start, fog_end, d).
+    var f = smoothstep(0.0, 1.0, vanilla_fog(position));
     if frame.dimension == 0 && frame.eye_in == 0u {
         // No haze in caves: it follows the sky light where the camera is.
-        f = max(f, (1.0 - exp(-length(position) * 0.006 * haze)) * 0.85 * frame.eye_light_smooth.y);
+        f = max(f, (1.0 - exp(-length(position) * 0.0022 * haze)) * 0.6 * frame.eye_light_smooth.y);
     }
     return mix(c, fog_toward(position), f);
 }

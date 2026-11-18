@@ -1,7 +1,7 @@
 # Vivid Horizon
 
 A shader pack for [Horizon](https://github.com/horizon-rust/horizon): vivid colours, a soft blue sky with
-volumetric clouds, warm sunlight and cool blue shadows, mirror-like turquoise water, rain that soaks the
+volumetric clouds, warm sunlight and cool blue shadows, clear turquoise water with gentle waves, rain that soaks the
 ground, and warm torch-lit nights under the Milky Way.
 
 ![Sunset on the lake](screenshots/1-sunset-lake.jpg)
@@ -35,7 +35,7 @@ under stained glass, ambient occlusion in corners and under leaves, volumetric g
 moonbeams. Block light in each source's colour: orange torches and fire, blue soul fire, red redstone, cool
 white sea lanterns, yellow, green and pink froglights; held lights too.
 
-**Water.** Clear turquoise water with refraction, depth colour, ripples, reflections of the world, a sun
+**Water.** Clear turquoise water with refraction, depth colour, gentle animated waves, soft reflections of the sky and world, a sun
 glint, glowing shallows and soft shore foam by day, caustics on the bottom. Glassy waterfalls with sliding
 streaks, clear even from inside. Underwater fog and light shafts.
 
@@ -45,14 +45,18 @@ houses, trees and torches. Readable rainy nights.
 **Camera.** Bloom, depth of field focused on what you look at, lens flare, exposure, contrast, saturation,
 vibrance and vignette. Waving leaves, grass and crops, stronger in storms.
 
+## What's new in 1.2.2
+
+Ported to shader API 0.2 (vanilla fog now comes from the pack), which also fixes the black picture on 0.2. Much thinner distance haze (no more white film), a bluer sky, a more vivid grade, softer water reflections (physical Fresnel) with the gentle animated waves kept, and rain and wet ground that fade across biome borders.
+
 ## Performance
 
-About 4.5 ms of GPU per frame at 1440p on an RTX 5070 Ti. On a slower GPU, turn off (or lower) Shadows,
+Under 4.5 ms of GPU per frame at 1440p on an RTX 5070 Ti. On a slower GPU, turn off (or lower) Shadows,
 Volumetric clouds and Wet ground reflections first.
 
 ## Source
 
-The pack is the [`vivid_horizon/`](vivid_horizon) folder (WGSL, Horizon shader API 0.1); its own
+The pack is the [`vivid_horizon/`](vivid_horizon) folder (WGSL, Horizon shader API 0.2); its own
 [README](vivid_horizon/README.md) lists what each file does. Check and build it with Horizon's tool:
 
 ```sh

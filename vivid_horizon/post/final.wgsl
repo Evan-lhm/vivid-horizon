@@ -57,21 +57,24 @@ fn defocus(input: PostInput, c: vec3<f32>) -> vec3<f32> {
     let radius = blur * 6.0 / frame.resolution.y;
     let aspect = vec2<f32>(frame.resolution.y / frame.resolution.x, 1.0);
     var sum = c;
-    for (var i = 0; i < 8; i++) {
+    for (var i = 0; i < 12; i++) {
         let a = f32(i) * 2.39996;
-        let r = sqrt((f32(i) + 0.5) / 8.0);
+        let r = sqrt((f32(i) + 0.5) / 12.0);
         let uv = input.uv + vec2<f32>(cos(a), sin(a)) * r * radius * aspect;
-        let m = textureSampleLevel(wet, linear_sampler, uv, 0.0);
-        sum += mix(textureSampleLevel(scene_color, linear_sampler, uv, 0.0).rgb, m.rgb, clamp(m.a, 0.0, 1.0));
+        let m = textureSampleLevel(wet, linear_sampler, uv, 0.0).rgb;
+        let k = clamp(textureSampleLevel(wet_mask, linear_sampler, uv, 0.0).r, 0.0, 1.0);
+        sum += to_gamma(textureSampleLevel(scene_color, linear_sampler, uv, 0.0).rgb) * (1.0 - k) + m;
     }
-    return sum / 9.0;
+    return sum / 13.0;
 }
 
 fn post(input: PostInput) -> vec4<f32> {
-    var c = input.color.rgb;
+    var c = to_gamma(input.color.rgb);
     // Wet ground mirrors the world (post/wet.wgsl).
-    let mirror = textureSampleLevel(wet, linear_sampler, input.uv, 0.0);
-    c = mix(c, mirror.rgb, clamp(mirror.a, 0.0, 1.0));
+    // (a post pass's alpha is ignored, so the reflection is premultiplied and its coverage is its own pass)
+    let mirror = textureSampleLevel(wet, linear_sampler, input.uv, 0.0).rgb;
+    let cover = clamp(textureSampleLevel(wet_mask, linear_sampler, input.uv, 0.0).r, 0.0, 1.0);
+    c = c * (1.0 - cover) + mirror;
     if depth_of_field > 0.0 {
         c = defocus(input, c);
     }
@@ -144,5 +147,5 @@ fn post(input: PostInput) -> vec4<f32> {
         let d = length((input.uv - 0.5) * vec2<f32>(aspect, 1.0)) / length(vec2<f32>(aspect, 1.0) * 0.5);
         c *= 1.0 - smoothstep(0.6, 1.15, d) * 0.3;
     }
-    return vec4<f32>(clamp(c, vec3<f32>(0.0), vec3<f32>(1.0)), input.color.a);
+    return vec4<f32>(to_linear(clamp(c, vec3<f32>(0.0), vec3<f32>(1.0))), input.color.a);
 }

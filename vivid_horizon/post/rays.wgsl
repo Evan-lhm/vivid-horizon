@@ -13,7 +13,7 @@ fn sun_screen() -> vec3<f32> {
     return vec3<f32>(s.xy, 1.0);
 }
 
-const VOLUME_STEPS: i32 = 12;
+const VOLUME_STEPS: i32 = 16;
 
 // With a shadow map: march through the air along the view ray and count the points the sun
 // reaches. Light gets through gaps in leaves, so the shafts do too, even with the sun off screen.
